@@ -1,0 +1,57 @@
+name: Check WSL Issues
+
+on:
+  push:
+  schedule:
+    - cron:  '0 * * * *'
+
+jobs:
+  check-issues:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Install Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install tweepy
+
+    - name: Fetch and tweet new issues
+      run: |
+        # Get the current time minus one hour in ISO 8601 format
+        since=$(date -u -d '1 hour ago' +'%Y-%m-%dT%H:%M:%SZ')
+
+        # Fetch new issues
+        issues=$(curl -H "Authorization: token $YOUR_GITHUB_TOKEN" \
+          "https://api.github.com/repos/microsoft/WSL/issues?since=$since")
+
+        # Tweet new issues
+        for issue in $(echo "${issues}" | jq -r '.[] | @base64'); do
+          _jq() {
+            echo ${issue} | base64 --decode | jq -r ${1}
+          }
+
+          # Extract the issue title and URL
+          title=$(_jq '.title')
+          url=$(_jq '.html_url')
+
+          # Use tweepy to Tweet the issue
+          echo "$title" "$url"
+          python ./tweet.py "$title" "$url"
+
+          # Sleep to avoid Twitter API rate limits
+          sleep 5
+        done
+      env:
+        YOUR_CONSUMER_KEY: ${{ secrets.YOUR_CONSUMER_KEY }}
+        YOUR_CONSUMER_SECRET: ${{ secrets.YOUR_CONSUMER_SECRET }}
+        YOUR_ACCESS_TOKEN: ${{ secrets.YOUR_ACCESS_TOKEN }}
+        YOUR_ACCESS_SECRET: ${{ secrets.YOUR_ACCESS_SECRET }}
+        YOUR_GITHUB_TOKEN: ${{ secrets.YOUR_GITHUB_TOKEN }}
