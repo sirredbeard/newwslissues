@@ -47,7 +47,7 @@ jobs:
           python ./tweet.py "$title" "$url" || true
 
           # Sleep to avoid Twitter API rate limits
-          sleep 5
+          sleep $((RANDOM % 51 + 10))
         done
       env:
         YOUR_CONSUMER_KEY: ${{ secrets.YOUR_CONSUMER_KEY }}
