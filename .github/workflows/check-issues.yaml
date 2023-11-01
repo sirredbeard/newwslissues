@@ -44,7 +44,7 @@ jobs:
 
           # Use tweepy to Tweet the issue
           echo "$title" "$url"
-          python ./tweet.py "$title" "$url"
+          python ./tweet.py "$title" "$url" || true
 
           # Sleep to avoid Twitter API rate limits
           sleep 5
